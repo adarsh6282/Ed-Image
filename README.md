@@ -1,8 +1,8 @@
-📸 Ed-Image
+# 🖼️ Ed-Image
 
 A simple full-stack MERN application that allows users to upload, manage, and store images securely in the cloud.
 
-🚀 Features
+# 🚀 Features
 
 🔐 User Authentication – Secure login & registration using JWT.
 
@@ -14,7 +14,7 @@ A simple full-stack MERN application that allows users to upload, manage, and st
 
 🎨 Responsive UI – Simple and user-friendly React interface.
 
-🛠️ Tech Stack
+# 🛠️ Tech Stack
 
 Frontend: React, TypeScript, Tailwind CSS
 Backend: Node.js, Express.js, TypeScript
@@ -22,7 +22,7 @@ Database: MongoDB, Mongoose
 Storage: Cloudinary
 Auth: JWT
 
-🏗️ Architecture Overview
+# 🏗️ Architecture Overview
 The backend follows a Repository Pattern, organizing code into:
 
 Controllers – Handle requests and responses.
@@ -31,7 +31,7 @@ Repositories – Interact with the database.
 This keeps the codebase clean, modular, and easy to maintain.
 
 
-📦 How to Run Locally
+# 📦 How to Run Locally
 1️⃣ Clone the project
 ```bash
 git clone https://github.com/adarsh6282/ed-image.git
