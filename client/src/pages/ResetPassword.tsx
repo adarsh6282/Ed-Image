@@ -123,9 +123,7 @@ export default function ResetPasswordPage() {
               {loading ? (
                 <PropagateLoader size={12} color="#ffffff" />
               ) : (
-                <>
-                  Reset Password
-                </>
+                  "Reset Password"
               )}
             </span>
 

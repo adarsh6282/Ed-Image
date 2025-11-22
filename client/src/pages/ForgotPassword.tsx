@@ -82,9 +82,7 @@ export default function ForgotPasswordPage() {
               {loading ? (
                 <PropagateLoader size={12} color="#ffffff" />
               ) : (
-                <>
-                  Send Reset Code
-                </>
+                  "Send Reset Code"
               )}
             </span>
 
