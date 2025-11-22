@@ -25,6 +25,7 @@
     "nodemailer": "^7.0.10",
     "nodemon": "^3.1.11",
     "otp-generator": "^4.0.1",
+    "resend": "^6.5.2",
     "ts-node-dev": "^2.0.0"
   },
   "devDependencies": {
