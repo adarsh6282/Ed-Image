@@ -86,7 +86,6 @@ export class ImageController implements IImageController {
   async reOrderImage(req: Request, res: Response): Promise<void> {
     try {
       const {order} = req.body;
-      console.log(order)
       const userId=req.user?.id
 
       if (!Array.isArray(order)) {

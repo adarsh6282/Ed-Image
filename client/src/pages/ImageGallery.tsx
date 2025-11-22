@@ -3,12 +3,20 @@ import type { ChangeEvent } from "react";
 import type { UploadedImage } from "../types/image";
 import { useNavigate } from "react-router-dom";
 import { Camera, Sparkles, Trash, Upload } from "lucide-react";
-import { deleteImage, getImages, imageUploadS, reorderImage, updateImage } from "../services/image.services";
-import { successToast } from "../components/Toast";
+import {
+  deleteImage,
+  getImages,
+  imageUploadS,
+  reorderImage,
+  updateImage,
+} from "../services/image.services";
+import { errorToast, successToast } from "../components/Toast";
+import type { AxiosError } from "axios";
 
 export default function ImageGallery() {
   const navigate = useNavigate();
   const [files, setFiles] = useState<File[]>([]);
+  const [loading, setLoading] = useState(false);
   const [titles, setTitles] = useState<string[]>([]);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -31,7 +39,7 @@ export default function ImageGallery() {
       formData.append("titles", titles[index]);
     });
 
-    await imageUploadS(formData)
+    await imageUploadS(formData);
 
     loadImages();
     setFiles([]);
@@ -39,7 +47,7 @@ export default function ImageGallery() {
   };
 
   const loadImages = async () => {
-    const res = await getImages()
+    const res = await getImages();
     setImages(res.data);
   };
 
@@ -48,7 +56,7 @@ export default function ImageGallery() {
     formData.append("title", newTitle);
     if (newImage) formData.append("image", newImage);
 
-    await updateImage(imageId,formData)
+    await updateImage(imageId, formData);
 
     setEditingId(null);
     setNewImage(null);
@@ -57,12 +65,14 @@ export default function ImageGallery() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response=await deleteImage(id)
-      const message=response.data.message
-      successToast(message)
+      const response = await deleteImage(id);
+      const message = response.data.message;
+      successToast(message);
       loadImages();
-    } catch (err) {
+    } catch (err: unknown) {
+      const error = err as AxiosError<{ message: string }>;
       console.log(err);
+      errorToast(error.response?.data?.message ?? "Something went wrong");
     }
   };
 
@@ -90,16 +100,16 @@ export default function ImageGallery() {
   const handleDragEnd = async () => {
     setDraggedIndex(null);
     const order = images.map((img) => img._id);
-    const response = await reorderImage(order)
-    const message=response.data.message
-    successToast(message)
+    const response = await reorderImage(order);
+    const message = response.data.message;
+    successToast(message);
   };
 
-  const handleLogout=()=>{
-    successToast("Logout Successfully")
-    localStorage.removeItem("token")
-    navigate("/")
-  }
+  const handleLogout = () => {
+    successToast("Logout Successfully");
+    localStorage.removeItem("token");
+    navigate("/");
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");

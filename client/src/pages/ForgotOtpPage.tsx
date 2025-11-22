@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { forgotSentOtp, resentOtp } from "../services/user.services";
-import { successToast } from "../components/Toast";
+import { errorToast, successToast } from "../components/Toast";
+import type { AxiosError } from "axios";
+import { otpSchema } from "../utils/validator";
+import { PropagateLoader } from "react-spinners";
 
 export default function ForgotOTPPage() {
+  const [loading, setLoading] = useState(false);
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(30);
   const navigate = useNavigate();
@@ -22,22 +26,34 @@ export default function ForgotOTPPage() {
   }, [timer]);
 
   useEffect(() => {
-      const usertoken=localStorage.getItem("token")
-      if (usertoken) navigate("/dashboard");
-    }, [navigate]);
+    const usertoken = localStorage.getItem("token");
+    if (usertoken) navigate("/dashboard");
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const stored = localStorage.getItem("email");
     const email = stored ? JSON.parse(stored) : null;
+    const validation = otpSchema.safeParse({ otp });
+
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
+      errorToast(errors.otp?.[0] || "Invalid input");
+      return;
+    }
+    setLoading(true)
     try {
       const response = await forgotSentOtp(email, otp);
-      const message=response.data.message
-      successToast(message)
+      const message = response.data.message;
+      successToast(message);
       navigate("/reset-password");
     } catch (err: unknown) {
+      const error = err as AxiosError<{ message: string }>;
       console.log(err);
+      errorToast(error.response?.data?.message ?? "Something went wrong");
+    }finally{
+      setLoading(false)
     }
   };
 
@@ -48,7 +64,9 @@ export default function ForgotOTPPage() {
       const email = stored ? JSON.parse(stored) : null;
       await resentOtp(email);
     } catch (err: unknown) {
+      const error = err as AxiosError<{ message: string }>;
       console.log(err);
+      errorToast(error.response?.data?.message ?? "Something went wrong");
     }
   };
 
@@ -89,11 +107,17 @@ export default function ForgotOTPPage() {
 
           <button
             onClick={handleSubmit}
-            className="relative w-full cursor-pointer p-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group"
+            disabled={loading}
+            className="relative w-full h-[56px] cursor-pointer p-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group disabled:opacity-70"
           >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              Verify Code
+            <span className="relative z-10 flex items-center justify-center gap-2 pb-2.5">
+              {loading ? (
+                <PropagateLoader size={12} color="#ffffff" />
+              ) : (
+                "Verify Code"
+              )}
             </span>
+
             <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
         </div>

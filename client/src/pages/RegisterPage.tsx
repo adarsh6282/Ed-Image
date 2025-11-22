@@ -2,9 +2,13 @@ import { Sparkles } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerS } from "../services/user.services";
-import { successToast } from "../components/Toast";
+import { errorToast, successToast } from "../components/Toast";
+import { signupSchema } from "../utils/validator";
+import type { AxiosError } from "axios";
+import { PropagateLoader } from "react-spinners";
 
 export default function RegisterPage() {
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -12,24 +16,45 @@ export default function RegisterPage() {
     phone: "",
     confirmPassword: "",
   });
-  const navigate=useNavigate()
+  const navigate = useNavigate();
 
-  const handleRegister = async (e:React.FormEvent) => {
-    e.preventDefault()
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const validation = signupSchema.safeParse(formData);
+
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
+
+      errorToast(
+        errors.name?.[0] ||
+          errors.email?.[0] ||
+          errors.phone?.[0] ||
+          errors.password?.[0] ||
+          errors.confirmPassword?.[0] ||
+          "Invalid input"
+      );
+
+      return;
+    }
+    setLoading(true);
     try {
-        const response=await registerS(formData.email)
-        const message=response.data.message
-        localStorage.setItem("userData",JSON.stringify(formData))
-        successToast(message)
-        navigate("/verify-otp")
-    } catch (err) {
-        console.log(err)
+      const response = await registerS(formData.email);
+      const message = response.data.message;
+      localStorage.setItem("userData", JSON.stringify(formData));
+      successToast(message);
+      navigate("/verify-otp");
+    } catch (err: unknown) {
+      const error = err as AxiosError<{ message: string }>;
+      console.log(err);
+      errorToast(error.response?.data?.message ?? "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
   useEffect(() => {
-      const usertoken=localStorage.getItem("token")
-      if (usertoken) navigate("/dashboard");
-    }, [navigate]);
+    const usertoken = localStorage.getItem("token");
+    if (usertoken) navigate("/dashboard");
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-4 relative overflow-hidden">
@@ -92,15 +117,23 @@ export default function RegisterPage() {
 
           <button
             onClick={handleRegister}
-            className="relative p-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group"
+            disabled={loading}
+            className="relative p-4 h-[56px] bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group disabled:opacity-70"
           >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              Create Account
-              <Sparkles
-                size={18}
-                className="group-hover:rotate-12 transition-transform"
-              />
+            <span className="relative z-10 flex items-center justify-center gap-2 pb-2.5">
+              {loading ? (
+                <PropagateLoader size={12} color="#ffffff" />
+              ) : (
+                <>
+                  Create Account
+                  <Sparkles
+                    size={18}
+                    className="group-hover:rotate-12 transition-transform"
+                  />
+                </>
+              )}
             </span>
+
             <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
         </div>

@@ -2,40 +2,68 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { resetPasswordS } from "../services/user.services";
-import { successToast } from "../components/Toast";
+import { errorToast, successToast } from "../components/Toast";
+import type { AxiosError } from "axios";
+import { resetPasswordSchema } from "../utils/validator";
+import { PropagateLoader } from "react-spinners";
 
 export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const navigate=useNavigate()
+  const navigate = useNavigate();
 
-  const handleSubmit = async(e:React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const validation = resetPasswordSchema.safeParse({
+      newPassword,
+      confirmPassword,
+    });
+
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
+      errorToast(
+        errors.newPassword?.[0] ||
+          errors.confirmPassword?.[0] ||
+          "Invalid input"
+      );
+      return;
+    }
+    setLoading(true)
     try {
-        const stored = localStorage.getItem("email")
-        const email=stored?JSON.parse(stored):null
-        const response = await resetPasswordS(email,newPassword,confirmPassword)
-        const message=response.data.message
-        localStorage.removeItem("email")
-        successToast(message)
-        navigate("/login")
-    } catch (err) {
-        console.log(err)
+      const stored = localStorage.getItem("email");
+      const email = stored ? JSON.parse(stored) : null;
+      const response = await resetPasswordS(
+        email,
+        newPassword,
+        confirmPassword
+      );
+      const message = response.data.message;
+      localStorage.removeItem("email");
+      successToast(message);
+      navigate("/");
+    } catch (err: unknown) {
+      const error = err as AxiosError<{ message: string }>;
+      console.log(err);
+      errorToast(error.response?.data?.message ?? "Something went wrong");
+    }finally{
+      setLoading(false)
     }
   };
 
   useEffect(() => {
-      const usertoken=localStorage.getItem("token")
-      if (usertoken) navigate("/dashboard");
-    }, [navigate]);
+    const usertoken = localStorage.getItem("token");
+    if (usertoken) navigate("/dashboard");
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-4 relative overflow-hidden">
       <div className="relative bg-white/95 backdrop-blur-xl shadow-2xl rounded-3xl p-8 w-full max-w-md border border-white/20">
-        <Link 
-          to={"/verify-otp"}
+        <Link
+          to={"/forgot-verify-otp"}
           className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors mb-6"
         >
           <ArrowLeft size={20} />
@@ -86,13 +114,21 @@ export default function ResetPasswordPage() {
             </button>
           </div>
 
-          <button 
+          <button
             onClick={handleSubmit}
-            className="relative w-full p-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group"
+            disabled={loading}
+            className="relative p-4 h-[56px] bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group disabled:opacity-70"
           >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              Reset Password
+            <span className="relative z-10 flex items-center justify-center gap-2 pb-2.5">
+              {loading ? (
+                <PropagateLoader size={12} color="#ffffff" />
+              ) : (
+                <>
+                  Reset Password
+                </>
+              )}
             </span>
+
             <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
         </div>

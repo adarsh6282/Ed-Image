@@ -4,32 +4,45 @@ import { Link, useNavigate } from "react-router-dom";
 import { loginS } from "../services/user.services";
 import { errorToast, successToast } from "../components/Toast";
 import type { AxiosError } from "axios";
+import { signinSchema } from "../utils/validator";
+import { PropagateLoader } from "react-spinners";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate=useNavigate()
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleLogin = async (e:React.FormEvent) => {
-    e.preventDefault()
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const validation = signinSchema.safeParse({ email, password });
+
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
+      errorToast(errors.email?.[0] || errors.password?.[0] || "Invalid input");
+      return;
+    }
+    setLoading(true);
     try {
-      const response=await loginS(email,password)
-      const token=response.data.token
-      const message=response.data.message
-      localStorage.setItem("token",token)
-      successToast(message)
-      navigate("/dashboard")
+      const response = await loginS(email, password);
+      const token = response.data.token;
+      const message = response.data.message;
+      localStorage.setItem("token", token);
+      successToast(message);
+      navigate("/dashboard");
     } catch (err: unknown) {
       const error = err as AxiosError<{ message: string }>;
-      console.log(err)
+      console.log(err);
       errorToast(error.response?.data?.message ?? "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-      const usertoken=localStorage.getItem("token")
-      if (usertoken) navigate("/dashboard");
-    }, [navigate]);
+    const usertoken = localStorage.getItem("token");
+    if (usertoken) navigate("/dashboard");
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-4 relative overflow-hidden">
@@ -69,15 +82,23 @@ export default function LoginPage() {
 
           <button
             onClick={handleLogin}
-            className="relative p-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group"
+            disabled={loading}
+            className="relative p-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group disabled:opacity-70"
           >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              Sign In
-              <Sparkles
-                size={18}
-                className="group-hover:rotate-12 transition-transform"
-              />
+            <span className="relative z-10 flex items-center justify-center gap-2 pb-2.5">
+              {loading ? (
+                <PropagateLoader size={12} color="#ffffff" />
+              ) : (
+                <>
+                  Sign In
+                  <Sparkles
+                    size={18}
+                    className="group-hover:rotate-12 transition-transform"
+                  />
+                </>
+              )}
             </span>
+
             <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
         </div>
