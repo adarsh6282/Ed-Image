@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="relative p-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group disabled:opacity-70"
+            className="relative p-4 h-[56px] bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group disabled:opacity-70"
           >
             <span className="relative z-10 flex items-center justify-center gap-2 pb-2.5">
               {loading ? (
