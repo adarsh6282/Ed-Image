@@ -16,6 +16,7 @@ const PORT=process.env.PORT
 
 const allowedOrigins=[
     "http://localhost:5173",
+    "https://ed-image-client.onrender.com"
 ]
 
 app.use(cors({
