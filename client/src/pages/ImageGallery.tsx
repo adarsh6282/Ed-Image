@@ -16,7 +16,6 @@ import type { AxiosError } from "axios";
 export default function ImageGallery() {
   const navigate = useNavigate();
   const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
   const [titles, setTitles] = useState<string[]>([]);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
