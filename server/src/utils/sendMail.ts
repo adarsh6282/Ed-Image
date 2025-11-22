@@ -6,8 +6,10 @@ dotenv.config();
 const resend = new Resend(process.env.RESEND_KEY);
 
 export const sendMail = async (email: string, otp: string) => {
+  console.log("📧 sendMail called with:", { email, otp });
+
   try {
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: "Acme <onboarding@resend.dev>",
       to: email,
       subject: "Verify your Account",
@@ -24,7 +26,12 @@ export const sendMail = async (email: string, otp: string) => {
       `,
     });
 
-    console.log("OTP email sent!");
+    if (error) {
+      console.error("❌ Resend error:", error);
+      return;
+    }
+
+    console.log("✅ Resend data:", data);
   } catch (error) {
     console.error("Failed to send email:", error);
   }
