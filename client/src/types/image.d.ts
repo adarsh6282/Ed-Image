@@ -3,6 +3,7 @@ export interface UploadedImage {
   userId: string;
   title: string;
   url: string;
+  position:number;
   public_url: string;
   createdAt?: string;
   updatedAt?: string;

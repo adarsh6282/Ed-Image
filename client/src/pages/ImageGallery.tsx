@@ -1,8 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import type { ChangeEvent } from "react";
 import type { UploadedImage } from "../types/image";
+import { BounceLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
-import { Camera, Sparkles, Trash, Upload } from "lucide-react";
+import {
+  Camera,
+  Sparkles,
+  Trash,
+  Upload,
+  X,
+  Plus,
+  LogOut,
+  Edit2,
+  Check,
+  ZoomIn,
+} from "lucide-react";
 import {
   deleteImage,
   getImages,
@@ -17,10 +29,13 @@ export default function ImageGallery() {
   const navigate = useNavigate();
   const [files, setFiles] = useState<File[]>([]);
   const [titles, setTitles] = useState<string[]>([]);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const editImageInputRef = useRef<HTMLInputElement | null>(null);
   const [newImage, setNewImage] = useState<File | null>(null);
 
@@ -43,23 +58,35 @@ export default function ImageGallery() {
     loadImages();
     setFiles([]);
     setTitles([]);
+    setShowUploadModal(false);
   };
 
   const loadImages = async () => {
     const res = await getImages();
-    setImages(res.data);
+    const sorted = res.data.sort(
+    (a: UploadedImage, b: UploadedImage) => a.position - b.position
+  );
+
+  setImages(sorted);
   };
 
   const saveChanges = async (imageId: string) => {
-    const formData = new FormData();
-    formData.append("title", newTitle);
-    if (newImage) formData.append("image", newImage);
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("title", newTitle);
+      if (newImage) formData.append("image", newImage);
 
-    await updateImage(imageId, formData);
+      await updateImage(imageId, formData);
 
-    setEditingId(null);
-    setNewImage(null);
-    loadImages();
+      setEditingId(null);
+      setNewImage(null);
+      loadImages();
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -79,22 +106,10 @@ export default function ImageGallery() {
     setDraggedIndex(index);
   };
 
-  const handleDragOver = (
-    e: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
+  const handleDragOver = (e: React.DragEvent) => {
+  e.preventDefault();
+};
 
-    const updated = [...images];
-    const draggedItem = updated[draggedIndex];
-
-    updated.splice(draggedIndex, 1);
-    updated.splice(index, 0, draggedItem);
-
-    setImages(updated);
-    setDraggedIndex(index);
-  };
 
   const handleDragEnd = async () => {
     setDraggedIndex(null);
@@ -102,6 +117,17 @@ export default function ImageGallery() {
     const response = await reorderImage(order);
     const message = response.data.message;
     successToast(message);
+  };
+
+  const handleDrop = (index: number) => {
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const updated = [...images];
+    const [moved] = updated.splice(draggedIndex, 1);
+    updated.splice(index, 0, moved);
+
+    setImages(updated);
+    setDraggedIndex(null);
   };
 
   const handleLogout = () => {
@@ -119,242 +145,311 @@ export default function ImageGallery() {
     }
   }, [navigate]);
 
+  const fullScreen = images.find((img) => img._id === fullScreenImage);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-6 relative overflow-hidden">
-      <div className="w-full flex justify-end mb-6">
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-red-500 hover:bg-red-600 
-             text-white rounded-xl shadow 
-             transition-all flex items-center gap-2"
-        >
-          Logout
-        </button>
-      </div>
-      <div className="max-w-6xl mx-auto relative z-10">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/20 backdrop-blur-xl border-b border-white/20">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
-              <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-full">
-                <Camera size={32} className="text-white" />
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg blur-lg opacity-50 animate-pulse"></div>
+              <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-2 rounded-lg">
+                <Camera size={24} className="text-white" />
               </div>
             </div>
+            <div>
+              <h1 className="text-xl font-bold text-white drop-shadow-lg">
+                Gallery
+              </h1>
+              <p className="text-xs text-white/90">{images.length} images</p>
+            </div>
           </div>
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white via-purple-100 to-pink-100 bg-clip-text text-transparent drop-shadow-lg">
-            Image Gallery
-          </h1>
-          <p className="text-white/90 text-sm">
-            Upload and manage your creative masterpieces
-          </p>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              <Plus size={18} />
+              Upload
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-300 shadow-lg"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+          </div>
         </div>
+      </header>
 
-        <div className="bg-white/95 backdrop-blur-xl shadow-2xl rounded-3xl p-8 mb-10 border border-white/20">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-xl">
-              <Upload size={24} className="text-white" />
-            </div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent">
-              Upload Images
-            </h2>
-          </div>
-
-          <label className="relative group cursor-pointer block">
-            <input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center transition-all duration-300 hover:border-purple-500 hover:bg-purple-50 group-hover:scale-[1.02]">
-              <Upload
-                size={48}
-                className="mx-auto mb-4 text-gray-400 group-hover:text-purple-600 transition-colors"
-              />
-              <p className="text-gray-600 font-semibold mb-2">
-                Click to upload
+      <main className="pt-24 pb-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          {images.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-32">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+                <Camera
+                  size={80}
+                  className="relative text-white drop-shadow-lg"
+                />
+              </div>
+              <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-2">
+                No images yet
+              </h2>
+              <p className="text-white/90 mb-6 drop-shadow">
+                Start building your gallery by uploading images
               </p>
-              <p className="text-sm text-gray-500">PNG, JPG, JPEG</p>
-            </div>
-          </label>
-
-          {files.length > 0 && (
-            <div className="space-y-4 mt-6">
-              {files.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-4 bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border-2 border-purple-200 transition-all duration-300 hover:shadow-lg"
-                >
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition-opacity"></div>
-                    <img
-                      src={URL.createObjectURL(file)}
-                      className="relative w-20 h-20 object-cover rounded-xl shadow-lg"
-                      alt="Preview"
-                    />
-                  </div>
-
-                  <input
-                    type="text"
-                    placeholder="Enter image title..."
-                    value={titles[index]}
-                    onChange={(e) => {
-                      const updated = [...titles];
-                      updated[index] = e.target.value;
-                      setTitles(updated);
-                    }}
-                    className="flex-1 p-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-white"
-                  />
-                </div>
-              ))}
-
               <button
-                onClick={handleUpload}
-                className="relative w-full p-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group"
+                onClick={() => setShowUploadModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  Upload All Images
-                  <Sparkles
-                    size={18}
-                    className="group-hover:rotate-12 transition-transform"
-                  />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <Plus size={20} />
+                Upload Images
               </button>
             </div>
-          )}
-        </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {images.map((img, index) => (
+                <div
+                  draggable={editingId !== img._id}
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={handleDragEnd}
+                  className={`group relative bg-white/95 backdrop-blur-sm rounded-2xl overflow-hidden border-2 border-white/40 hover:border-purple-300 shadow-xl transition-all duration-300 ${
+                    draggedIndex === index
+                      ? "opacity-50 scale-95"
+                      : "hover:scale-105 hover:shadow-2xl"
+                  }`}
+                >
+                  <div className="relative aspect-square overflow-hidden bg-black/40">
+                    {editingId === img._id ? (
+                      <>
+                        <img
+                          src={
+                            newImage ? URL.createObjectURL(newImage) : img.url
+                          }
+                          className="w-full h-full object-cover"
+                          alt={img.title}
+                        />
+                        <input
+                          ref={editImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) =>
+                            setNewImage(e.target.files?.[0] || null)
+                          }
+                        />
+                        <button
+                          onClick={() => editImageInputRef.current?.click()}
+                          className="absolute bottom-3 right-3 px-3 py-1.5 bg-white/90 backdrop-blur-sm text-xs font-medium rounded-lg shadow-lg hover:bg-white transition-all"
+                        >
+                          Change Image
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="relative aspect-square overflow-hidden bg-black/40">
+                          <img
+                            src={img.url}
+                            alt={img.title}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
 
-        <div className="bg-white/95 backdrop-blur-xl shadow-2xl rounded-3xl p-8 border border-white/20">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-xl">
-              <Camera size={24} className="text-white" />
-            </div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent">
-              Your Gallery
-            </h2>
-          </div>
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                          <button
+                            onClick={() => setFullScreenImage(img._id)}
+                            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          >
+                            <div className="p-4 bg-white/90 rounded-full shadow-xl hover:scale-110 transition-transform">
+                              <ZoomIn size={20} className="text-gray-800" />
+                            </div>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {images.map((img, index) => (
-              <div
-                key={img._id}
-                draggable={editingId !== img._id}
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
-                className={`group relative bg-white rounded-2xl overflow-hidden border-2 border-transparent hover:border-purple-300 
-      transition-transform duration-300 ${
-        draggedIndex === index ? "opacity-60 scale-95" : ""
-      }`}
-              >
-                <div className="relative">
-                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 z-10"></div>
-
-                  {editingId === img._id ? (
-                    <div className="relative w-full h-48 bg-gray-100 flex items-center justify-center">
-                      <img
-                        src={newImage ? URL.createObjectURL(newImage) : img.url}
-                        className="w-full h-48 object-cover"
-                      />
-
+                  <div className="p-4">
+                    {editingId === img._id ? (
                       <input
-                        ref={editImageInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) =>
-                          setNewImage(e.target.files?.[0] || null)
-                        }
+                        value={newTitle}
+                        onChange={(e) => setNewTitle(e.target.value)}
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-gray-700 text-center focus:outline-none focus:border-purple-500 transition-all"
+                        placeholder="Image title"
                       />
+                    ) : (
+                      <h3 className="font-semibold text-gray-800 text-center truncate group-hover:text-purple-700 transition-colors">
+                        {img.title}
+                      </h3>
+                    )}
+                  </div>
 
+                  {editingId !== img._id ? (
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <button
-                        onClick={() => editImageInputRef.current?.click()}
-                        className="absolute bottom-2 right-2 bg-white px-3 py-1 text-xs 
-                 rounded-lg shadow hover:bg-gray-100 border border-gray-300"
+                        onClick={() => {
+                          setEditingId(img._id);
+                          setNewTitle(img.title);
+                          setNewImage(null);
+                        }}
+                        className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white transition-all hover:scale-110"
                       >
-                        Change Image
+                        <Edit2 size={16} className="text-purple-600" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(img._id)}
+                        className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white transition-all hover:scale-110"
+                      >
+                        <Trash size={16} className="text-red-500" />
                       </button>
                     </div>
                   ) : (
-                    <img
-                      src={img.url}
-                      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-                      alt={img.title}
-                    />
+                    <div className="absolute top-3 right-3 flex gap-2">
+                      <button
+                        onClick={() => saveChanges(img._id)}
+                        disabled={loading}
+                        className="p-2 bg-green-500 rounded-lg shadow-lg hover:bg-green-600 transition-all"
+                      >
+                        {loading ? (
+                          <BounceLoader size={16} color="#000000" />
+                        ) : (
+                          <Check size={16} className="text-white" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingId(null);
+                          setNewImage(null);
+                        }}
+                        className="p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white transition-all"
+                      >
+                        <X size={16} className="text-gray-700" />
+                      </button>
+                    </div>
                   )}
                 </div>
-
-                <div className="p-4">
-                  {editingId === img._id ? (
-                    <input
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full p-2 border rounded-lg text-center"
-                    />
-                  ) : (
-                    <p className="font-semibold text-center text-gray-800 group-hover:text-purple-600 transition-colors">
-                      {img.title}
-                    </p>
-                  )}
-                </div>
-
-                {editingId !== img._id && (
-                  <div className="absolute top-3 right-3 flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                    <button
-                      onClick={() => {
-                        setEditingId(img._id);
-                        setNewTitle(img.title);
-                        setNewImage(null);
-                      }}
-                      className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg"
-                    >
-                      <Sparkles size={16} className="text-purple-600" />
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(img._id)}
-                      className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg"
-                    >
-                      <Trash size={16} className="text-red-500" />
-                    </button>
-                  </div>
-                )}
-
-                {editingId === img._id && (
-                  <div className="absolute bottom-3 right-3 flex gap-2 z-20">
-                    <button
-                      onClick={() => saveChanges(img._id)}
-                      className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg shadow hover:bg-purple-700"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingId(null);
-                        setNewImage(null);
-                      }}
-                      className="px-3 py-1 bg-gray-300 text-sm rounded-lg shadow hover:bg-gray-400"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {images.length === 0 && (
-            <div className="text-center py-12">
-              <Camera size={64} className="mx-auto mb-4 text-gray-300" />
-              <p className="text-gray-500 text-lg">No images uploaded yet</p>
-              <p className="text-gray-400 text-sm mt-2">
-                Start uploading to see your gallery!
-              </p>
+              ))}
             </div>
           )}
         </div>
-      </div>
+      </main>
+
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border-2 border-white/40 max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white/95 backdrop-blur-xl border-b-2 border-purple-100 p-6 flex items-center justify-between rounded-t-3xl">
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-xl shadow-lg">
+                  <Upload size={24} className="text-white" />
+                </div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent">
+                  Upload Images
+                </h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setFiles([]);
+                  setTitles([]);
+                }}
+                className="p-2 hover:bg-purple-50 rounded-lg transition-all"
+              >
+                <X size={24} className="text-gray-600" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <label className="relative group cursor-pointer block">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center transition-all duration-300 hover:border-purple-500 hover:bg-purple-50 group-hover:scale-[1.02]">
+                  <Upload
+                    size={48}
+                    className="mx-auto mb-4 text-gray-400 group-hover:text-purple-600 transition-colors"
+                  />
+                  <p className="text-gray-600 font-semibold mb-2">
+                    Click to select images
+                  </p>
+                  <p className="text-sm text-gray-500">PNG, JPG, JPEG</p>
+                </div>
+              </label>
+
+              {files.length > 0 && (
+                <div className="space-y-4">
+                  {files.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border-2 border-purple-200 shadow-sm"
+                    >
+                      <div className="relative group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition-opacity"></div>
+                        <img
+                          src={URL.createObjectURL(file)}
+                          className="relative w-20 h-20 object-cover rounded-xl shadow-lg"
+                          alt="Preview"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Enter image title..."
+                        value={titles[index]}
+                        onChange={(e) => {
+                          const updated = [...titles];
+                          updated[index] = e.target.value;
+                          setTitles(updated);
+                        }}
+                        className="flex-1 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:border-purple-500 transition-all"
+                      />
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={handleUpload}
+                    className="relative w-full py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 overflow-hidden group"
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      <Sparkles
+                        size={20}
+                        className="group-hover:rotate-12 transition-transform"
+                      />
+                      Upload {files.length}{" "}
+                      {files.length === 1 ? "Image" : "Images"}
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {fullScreen && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
+          <button
+            onClick={() => setFullScreenImage(null)}
+            className="absolute top-5 right-5 text-white"
+          >
+            ✕
+          </button>
+
+          <img
+            src={fullScreen.url}
+            alt={fullScreen.title}
+            className="max-h-[90vh] max-w-[90vw] object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
