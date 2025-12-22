@@ -3,7 +3,7 @@ import { toUserDTO } from "../../Mappers/user.mapper";
 import { IUser } from "../../models/interfaces/user.interface";
 import { IOtpRepository } from "../../repository/interfaces/otp.interface";
 import { IUserRepository } from "../../repository/interfaces/user.interface";
-import { generateToken } from "../../utils/jwt";
+import { generateRefreshToken, generateToken } from "../../utils/jwt";
 import generateOtp, { generateOtpExpiry } from "../../utils/otpGenerator";
 import { sendMail } from "../../utils/sendMail";
 import { IUserService } from "../interfaces/user.interface";
@@ -15,7 +15,7 @@ export class UserService implements IUserService {
   async loginUser(
     email: string,
     password: string
-  ): Promise<{ user: UserDTO; token: string }> {
+  ): Promise<{ user: UserDTO; token: string; refreshToken:string }> {
     const user = await this._userRepository.findByEmail(email);
     if (!user) {
       throw new Error("User not found");
@@ -25,7 +25,8 @@ export class UserService implements IUserService {
       throw new Error("Invalid Password");
     }
     const token = generateToken(user._id, user.email);
-    return { user:toUserDTO(user), token };
+    const refreshToken=generateRefreshToken(user._id,user.email)
+    return { user:toUserDTO(user), token, refreshToken };
   }
 
   async registerUser(email: string): Promise<void> {
@@ -47,7 +48,7 @@ export class UserService implements IUserService {
 
   async verifyOtp(
     data: IUser & { otp: string }
-  ): Promise<{ user: UserDTO; token: string }> {
+  ): Promise<{ user: UserDTO; token: string; refreshToken:string }> {
     const otpRecord = await this._otpRepository.findOtpbyEmail(data.email);
 
     if (!otpRecord) throw new Error("OTP not found");
@@ -68,8 +69,9 @@ export class UserService implements IUserService {
     await this._otpRepository.deleteOtpbyEmail(data.email);
 
     const token = generateToken(user._id, user.email,);
+    const refreshToken = generateRefreshToken(user._id, user.email,);
 
-    return { user:toUserDTO(user), token };
+    return { user:toUserDTO(user), token, refreshToken };
   }
 
   async resentOtp(email: string): Promise<void> {

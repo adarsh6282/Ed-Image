@@ -13,5 +13,6 @@ router.post(
 );
 router.post("/verify-forgot-otp",userController.verifyForgotOtp.bind(userController))
 router.post("/reset-password",userController.resetPassword.bind(userController))
-
+router.post("/refresh-token",userController.refreshToken.bind(userController))
+router.post("/logout",userController.logOut.bind(userController))
 export default router;

@@ -6,3 +6,12 @@ export interface ImageDTO {
   userId: string;
   position: number;
 }
+
+export interface ImageViewDTO {
+  _id: string;
+  title: string;
+  signedUrl: string;
+  public_id: string;
+  position: number;
+  expiresAt: number;
+}

@@ -14,7 +14,7 @@ const authUser = () => {
       const authHeader = req.headers.authorization;
 
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        res.status(httpStatus.FORBIDDEN).json({
+        res.status(httpStatus.UNAUTHORIZED).json({
           success: false,
           message: "Authentication failed. Token missing or malformed.",
         });
@@ -27,7 +27,7 @@ const authUser = () => {
       const user = await User.findById(decoded._id);
 
       if (!user) {
-        res.status(httpStatus.FORBIDDEN).json({
+        res.status(httpStatus.UNAUTHORIZED).json({
           success: false,
           message: "User not found",
         });
@@ -45,7 +45,7 @@ const authUser = () => {
       const message =
         err instanceof Error ? err.message : "Something went wrong";
 
-      res.status(httpStatus.FORBIDDEN).json({
+      res.status(httpStatus.UNAUTHORIZED).json({
         success: false,
         message,
       });

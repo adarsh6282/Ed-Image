@@ -8,4 +8,6 @@ export interface IUserController{
     handleForgotPassword(req:Request,res:Response):Promise<void>
     verifyForgotOtp(req:Request,res:Response):Promise<void>
     resetPassword(req:Request,res:Response):Promise<void>
+    refreshToken(req:Request,res:Response):Promise<void>
+    logOut(req:Request,res:Response):Promise<void>
 }

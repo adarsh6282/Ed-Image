@@ -5,6 +5,7 @@ import userRoutes from "./routes/user.routes"
 import imageRoutes from "./routes/image.routes"
 import morgan from "morgan"
 import cors from "cors"
+import cookieParser from "cookie-parser"
 
 dotenv.config()
 
@@ -27,6 +28,7 @@ app.use(cors({
 app.use(express.json())
 app.use(morgan("dev"))
 app.use(express.urlencoded({extended:true}))
+app.use(cookieParser())
 
 app.use("/api",userRoutes)
 app.use("/api/images",imageRoutes)

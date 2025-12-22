@@ -43,6 +43,7 @@ export class ImageController implements IImageController {
     try {
       const userId = req.user?.id;
       const images = await this._imageService.getImages(userId!);
+      console.log(images)
       res.status(httpStatus.OK).json(images);
     } catch (err: unknown) {
       console.error(err);
