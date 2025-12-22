@@ -7,7 +7,7 @@ const storage = new CloudinaryStorage({
   params: async (req, file) => ({
     folder: "ed_image",
     resource_type: "auto",
-    type:"private",
+    access_mode:"private",
     format: file.mimetype.split("/")[1],
     public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
   }),
