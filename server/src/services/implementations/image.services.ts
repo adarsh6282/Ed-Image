@@ -32,6 +32,10 @@ export class ImageService implements IImageService {
         position: currrentPosition++,
         userId: new mongoose.Types.ObjectId(userId),
       });
+
+      await cloudinary.api.update(image.public_id, {
+        access_mode: "private",
+      });
       UploadedImages.push(image);
     }
     if (!UploadedImages) {
