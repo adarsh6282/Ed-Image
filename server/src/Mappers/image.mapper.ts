@@ -15,23 +15,3 @@ export const toImageDTO = (image: IImage): ImageDTO => {
 export const toImageDTOList=(images:IImage[]):ImageDTO[]=>{
     return images.map(toImageDTO)
 }
-
-export const toImageViewDTO = (data: {
-  _id: string;
-  title: string;
-  signedUrl: string;
-  public_id: string;
-  position: number;
-  expiresAt: number;
-}): ImageViewDTO => ({
-  _id: data._id.toString(),
-  title: data.title,
-  signedUrl: data.signedUrl,
-  public_id: data.public_id,
-  position: data.position,
-  expiresAt: data.expiresAt,
-});
-
-export const toImageViewDTOList = (
-  images: ReturnType<typeof toImageViewDTO>[]
-): ImageViewDTO[] => images;

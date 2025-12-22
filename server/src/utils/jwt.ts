@@ -5,7 +5,7 @@ export const generateToken = (id:string,email: string): string => {
   return jwt.sign(
     payload,
     process.env.JWT_SECRET!,
-    { expiresIn: "3m" }
+    { expiresIn: "15m" }
   );
 }
 export const generateRefreshToken = (id:string,email: string): string => {

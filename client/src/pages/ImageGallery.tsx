@@ -147,26 +147,6 @@ export default function ImageGallery() {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    if (images.length === 0) return;
-
-    const earliestExpiry = Math.min(
-      ...images.map((img) => img.expiresAt * 1000)
-    );
-    const refreshTime = earliestExpiry - Date.now() - 10_000;
-
-    if (refreshTime <= 0) {
-      loadImages();
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      loadImages();
-    }, refreshTime);
-
-    return () => clearTimeout(timer);
-  }, [images]);
-
   const fullScreen = images.find((img) => img._id === fullScreenImage);
 
   return (
@@ -253,7 +233,7 @@ export default function ImageGallery() {
                       <>
                         <img
                           src={
-                            newImage ? URL.createObjectURL(newImage) : img.signedUrl
+                            newImage ? URL.createObjectURL(newImage) : img.url
                           }
                           className="w-full h-full object-cover"
                           alt={img.title}
@@ -278,7 +258,7 @@ export default function ImageGallery() {
                       <>
                         <div className="relative aspect-square overflow-hidden bg-black/40">
                           <img
-                            src={img.signedUrl}
+                            src={img.url}
                             alt={img.title}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
@@ -466,7 +446,7 @@ export default function ImageGallery() {
           </button>
 
           <img
-            src={fullScreen.signedUrl}
+            src={fullScreen.url}
             alt={fullScreen.title}
             className="max-h-[90vh] max-w-[90vw] object-contain"
           />

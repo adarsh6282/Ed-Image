@@ -6,8 +6,7 @@ import cloudinary from "../../config/cloudinary.config";
 import { ImageDTO, ImageViewDTO } from "../../DTO/image.dto";
 import {
   toImageDTO,
-  toImageDTOList,
-  toImageViewDTO,
+  toImageDTOList
 } from "../../Mappers/image.mapper";
 
 export class ImageService implements IImageService {
@@ -32,10 +31,6 @@ export class ImageService implements IImageService {
         position: currrentPosition++,
         userId: new mongoose.Types.ObjectId(userId),
       });
-
-      await cloudinary.api.update(image.public_id, {
-        access_mode: "private",
-      });
       UploadedImages.push(image);
     }
     if (!UploadedImages) {
@@ -44,34 +39,14 @@ export class ImageService implements IImageService {
     return toImageDTOList(UploadedImages);
   }
 
-  async getImages(userId: string): Promise<ImageViewDTO[]> {
+  async getImages(userId: string): Promise<ImageDTO[]> {
     const images = await this._imageRepository.findAllImages(userId);
 
     if (!images) {
       throw new Error("images not found");
     }
-
-    return images.map((img) => {
-      const now = Math.floor(Date.now() / 1000);
-      const expiresAt = now + 60 * 5;
-
-      const signedUrl = cloudinary.url(img.public_id, {
-        type: "private",
-        sign_url: true,
-        expires_at: expiresAt,
-        secure: true,
-        version: now,
-      });
-
-      return toImageViewDTO({
-        _id: img._id!,
-        title: img.title,
-        signedUrl,
-        public_id: img.public_id,
-        position: img.position,
-        expiresAt,
-      });
-    });
+    
+    return toImageDTOList(images)
   }
 
   async updateImage(
