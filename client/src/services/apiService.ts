@@ -10,22 +10,39 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
 api.interceptors.response.use(
   (res) => res,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const res = await axios.post<{ token: string }>(
+          "http://localhost:3000/api/refresh-token",
+          {},
+          { withCredentials: true }
+        );
 
-  async (err) => {
-    const status = err.response?.status;
-    if (status === 401 || status === 403) {
-      localStorage.removeItem("token");
-      window.location.href = "/";
+        const newToken = res.data.token;
+        localStorage.setItem("token", newToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+        return api(originalRequest);
+      } catch (refreshError) {
+        localStorage.removeItem("token");
+        if (!window.location.pathname.includes("/")) {
+          window.location.href = "/";
+        }
+        return Promise.reject(refreshError);
+      }
     }
-
-    return Promise.reject(err);
+    return Promise.reject(error);
   }
 );
-
-export default api;

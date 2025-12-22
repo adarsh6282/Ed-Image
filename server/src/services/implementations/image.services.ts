@@ -52,7 +52,7 @@ export class ImageService implements IImageService {
       const expiresAt = now + 60 * 5;
 
       const signedUrl = cloudinary.url(img.public_id, {
-        type: "authenticated",
+        type: "private",
         sign_url: true,
         expires_at: expiresAt,
         secure: true,

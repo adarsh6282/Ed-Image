@@ -1,10 +1,9 @@
 export interface UploadedImage {
   _id: string;
-  userId: string;
+  userId?: string;
   title: string;
-  url: string;
+  signedUrl: string;
   position:number;
-  public_url: string;
-  createdAt?: string;
-  updatedAt?: string;
+  public_id: string;
+  expiresAt:number
 }

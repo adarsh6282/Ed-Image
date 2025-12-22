@@ -24,6 +24,7 @@ import {
 } from "../services/image.services";
 import { errorToast, successToast } from "../components/Toast";
 import type { AxiosError } from "axios";
+import { logOutS } from "../services/user.services";
 
 export default function ImageGallery() {
   const navigate = useNavigate();
@@ -64,10 +65,10 @@ export default function ImageGallery() {
   const loadImages = async () => {
     const res = await getImages();
     const sorted = res.data.sort(
-    (a: UploadedImage, b: UploadedImage) => a.position - b.position
-  );
+      (a: UploadedImage, b: UploadedImage) => a.position - b.position
+    );
 
-  setImages(sorted);
+    setImages(sorted);
   };
 
   const saveChanges = async (imageId: string) => {
@@ -107,9 +108,8 @@ export default function ImageGallery() {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-  e.preventDefault();
-};
-
+    e.preventDefault();
+  };
 
   const handleDragEnd = async () => {
     setDraggedIndex(null);
@@ -130,8 +130,10 @@ export default function ImageGallery() {
     setDraggedIndex(null);
   };
 
-  const handleLogout = () => {
-    successToast("Logout Successfully");
+  const handleLogout = async() => {
+    const res=await logOutS()
+    const message=res.data.message
+    successToast(message)
     localStorage.removeItem("token");
     navigate("/");
   };
@@ -144,6 +146,26 @@ export default function ImageGallery() {
       loadImages();
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (images.length === 0) return;
+
+    const earliestExpiry = Math.min(
+      ...images.map((img) => img.expiresAt * 1000)
+    );
+    const refreshTime = earliestExpiry - Date.now() - 10_000;
+
+    if (refreshTime <= 0) {
+      loadImages();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      loadImages();
+    }, refreshTime);
+
+    return () => clearTimeout(timer);
+  }, [images]);
 
   const fullScreen = images.find((img) => img._id === fullScreenImage);
 
@@ -231,7 +253,7 @@ export default function ImageGallery() {
                       <>
                         <img
                           src={
-                            newImage ? URL.createObjectURL(newImage) : img.url
+                            newImage ? URL.createObjectURL(newImage) : img.signedUrl
                           }
                           className="w-full h-full object-cover"
                           alt={img.title}
@@ -256,7 +278,7 @@ export default function ImageGallery() {
                       <>
                         <div className="relative aspect-square overflow-hidden bg-black/40">
                           <img
-                            src={img.url}
+                            src={img.signedUrl}
                             alt={img.title}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
@@ -444,7 +466,7 @@ export default function ImageGallery() {
           </button>
 
           <img
-            src={fullScreen.url}
+            src={fullScreen.signedUrl}
             alt={fullScreen.title}
             className="max-h-[90vh] max-w-[90vw] object-contain"
           />

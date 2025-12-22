@@ -1,4 +1,4 @@
-import api from "./apiService"
+import {api} from "./apiService"
 
 export const loginS=async(email:string,password:string)=>{
     return await api.post("/login",{email,password})
@@ -35,4 +35,8 @@ export const forgotSentOtp=async(email:string,otp:string)=>{
 
 export const resetPasswordS=async(email:string,newPassword:string,confirmPassword:string)=>{
     return await api.post("/reset-password",{email,newPassword,confirmPassword})
+}
+
+export const logOutS=async()=>{
+  return await api.post("/logout", {}, { withCredentials: true })
 }

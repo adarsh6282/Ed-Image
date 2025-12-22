@@ -1,4 +1,4 @@
-import api from "../services/apiService";
+import {api} from "../services/apiService";
 import type { UploadedImage } from "../types/image";
 
 export const imageUploadS = async (formData: FormData) => {
