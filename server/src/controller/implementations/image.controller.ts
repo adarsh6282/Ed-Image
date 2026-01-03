@@ -42,9 +42,10 @@ export class ImageController implements IImageController {
   async getImages(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
-      const images = await this._imageService.getImages(userId!);
-      console.log(images)
-      res.status(httpStatus.OK).json(images);
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 6;
+      const {images,total} = await this._imageService.getImages(userId!,page,limit);
+      res.status(httpStatus.OK).json({images,total});
     } catch (err: unknown) {
       console.error(err);
       const message =
@@ -86,8 +87,10 @@ export class ImageController implements IImageController {
 
   async reOrderImage(req: Request, res: Response): Promise<void> {
     try {
-      const {order} = req.body;
-      const userId=req.user?.id
+      const { order }: {
+      order: { id: string; position: number }[];
+    } = req.body;
+      const userId = req.user?.id;
 
       if (!Array.isArray(order)) {
         res
@@ -96,7 +99,7 @@ export class ImageController implements IImageController {
         return;
       }
 
-      await this._imageService.reorderImages(order,userId!);
+      await this._imageService.reorderImages(order, userId!);
 
       res
         .status(httpStatus.OK)

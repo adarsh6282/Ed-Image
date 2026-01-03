@@ -22,6 +22,8 @@ import {
   reorderImage,
   updateImage,
 } from "../services/image.services";
+import Pagination from "@mui/material/Pagination";
+import Stack from "@mui/material/Stack";
 import { errorToast, successToast } from "../components/Toast";
 import type { AxiosError } from "axios";
 import { logOutS } from "../services/user.services";
@@ -39,6 +41,9 @@ export default function ImageGallery() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const editImageInputRef = useRef<HTMLInputElement | null>(null);
   const [newImage, setNewImage] = useState<File | null>(null);
+  const [page, setPage] = useState(1);
+  const limit = 8;
+  const [total, setTotal] = useState(0);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files ? Array.from(e.target.files) : [];
@@ -62,14 +67,12 @@ export default function ImageGallery() {
     setShowUploadModal(false);
   };
 
-  const loadImages = async () => {
-    const res = await getImages();
-    const sorted = res.data.sort(
-      (a: UploadedImage, b: UploadedImage) => a.position - b.position
-    );
+  const loadImages = async (pageNo = page) => {
+  const res = await getImages(pageNo, limit);
 
-    setImages(sorted);
-  };
+  setImages(res.data.images);
+  setTotal(res.data.total);
+};
 
   const saveChanges = async (imageId: string) => {
     setLoading(true);
@@ -111,13 +114,19 @@ export default function ImageGallery() {
     e.preventDefault();
   };
 
-  const handleDragEnd = async () => {
-    setDraggedIndex(null);
-    const order = images.map((img) => img._id);
-    const response = await reorderImage(order);
-    const message = response.data.message;
-    successToast(message);
-  };
+ const handleDragEnd = async () => {
+  setDraggedIndex(null);
+
+  const offset = (page - 1) * limit;
+
+  const order = images.map((img, index) => ({
+    id: img._id,
+    position: offset + index,
+  }));
+
+  const response = await reorderImage(order);
+  successToast(response.data.message);
+};
 
   const handleDrop = (index: number) => {
     if (draggedIndex === null || draggedIndex === index) return;
@@ -130,10 +139,10 @@ export default function ImageGallery() {
     setDraggedIndex(null);
   };
 
-  const handleLogout = async() => {
-    const res=await logOutS()
-    const message=res.data.message
-    successToast(message)
+  const handleLogout = async () => {
+    const res = await logOutS();
+    const message = res.data.message;
+    successToast(message);
     localStorage.removeItem("token");
     navigate("/");
   };
@@ -340,6 +349,18 @@ export default function ImageGallery() {
             </div>
           )}
         </div>
+        <Stack spacing={2} alignItems="center" className="mt-10">
+          <Pagination
+            count={Math.ceil(total / limit)}
+            page={page}
+            onChange={(_event: React.ChangeEvent<unknown>, value: number) => {
+              setPage(value);
+              loadImages(value);
+            }}
+            color="secondary"
+            shape="rounded"
+          />
+        </Stack>
       </main>
 
       {showUploadModal && (

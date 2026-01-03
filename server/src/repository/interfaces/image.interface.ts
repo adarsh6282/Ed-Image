@@ -8,4 +8,9 @@ export interface IImageRepository{
     deleteImage(id:string):Promise<IImage|null>
     updatePosition(imageId: string, newPos: number, userId: string):Promise<IImage|null>
     findLastImage(userId:string):Promise<IImage|null>
+    findPaginatedImages(
+    userId: string,
+    page: number,
+    limit: number
+  ): Promise<{ images: IImage[]; total: number }>
 }

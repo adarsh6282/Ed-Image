@@ -7,8 +7,8 @@ export const imageUploadS = async (formData: FormData) => {
   });
 };
 
-export const getImages = async () => {
-  return await api.get<UploadedImage[]>(`/images`);
+export const getImages = async (page:number,limit:number) => {
+  return await api.get<{images:UploadedImage[],total:number}>(`/images?page=${page}&limit=${limit}`);
 };
 
 export const updateImage = async (imageId: string, formData: FormData) => {
@@ -21,6 +21,6 @@ export const deleteImage=async(id:string)=>{
     return await api.delete(`/images/${id}`);
 }
 
-export const reorderImage=async(order:string[])=>{
+export const reorderImage=async(order:{ id: string; position: number; }[])=>{
     return await api.put("/images/reorder", { order });
 }

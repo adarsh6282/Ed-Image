@@ -4,10 +4,7 @@ import { IImageRepository } from "../../repository/interfaces/image.interface";
 import { IImageService } from "../interfaces/image.interface";
 import cloudinary from "../../config/cloudinary.config";
 import { ImageDTO, ImageViewDTO } from "../../DTO/image.dto";
-import {
-  toImageDTO,
-  toImageDTOList
-} from "../../Mappers/image.mapper";
+import { toImageDTO, toImageDTOList } from "../../Mappers/image.mapper";
 
 export class ImageService implements IImageService {
   constructor(private _imageRepository: IImageRepository) {}
@@ -39,14 +36,25 @@ export class ImageService implements IImageService {
     return toImageDTOList(UploadedImages);
   }
 
-  async getImages(userId: string): Promise<ImageDTO[]> {
-    const images = await this._imageRepository.findAllImages(userId);
+  async getImages(
+    userId: string,
+    page: number,
+    limit: number
+  ): Promise<{ images: ImageDTO[]; total: number }> {
+    const { images, total } = await this._imageRepository.findPaginatedImages(
+      userId,
+      page,
+      limit
+    );
 
     if (!images) {
       throw new Error("images not found");
     }
-    
-    return toImageDTOList(images)
+
+    return {
+      images: toImageDTOList(images),
+      total,
+    };
   }
 
   async updateImage(
@@ -93,9 +101,16 @@ export class ImageService implements IImageService {
     return toImageDTO(deleted);
   }
 
-  async reorderImages(orders: string[], userId: string): Promise<void> {
-    for (let i = 0; i < orders.length; i++) {
-      await this._imageRepository.updatePosition(orders[i], i, userId);
+  async reorderImages(
+    orders: { id: string; position: number }[],
+    userId: string
+  ): Promise<void> {
+    for (const item of orders) {
+      await this._imageRepository.updatePosition(
+        item.id,
+        item.position,
+        userId
+      );
     }
   }
 }
