@@ -24,7 +24,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const res = await axios.post<{ token: string }>(
-          "http://localhost:3000/api/refresh-token",
+          "https://ed-image.onrender.com/api/refresh-token",
           {},
           { withCredentials: true }
         );
