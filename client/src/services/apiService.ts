@@ -23,11 +23,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const res = await axios.post<{ token: string }>(
-          "https://ed-image.onrender.com/api/refresh-token",
-          {},
-          { withCredentials: true }
-        );
+        const res=await api.post<{ token: string }>("/refresh-token");
 
         const newToken = res.data.token;
         localStorage.setItem("token", newToken);
